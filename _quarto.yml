@@ -1,0 +1,58 @@
+editor: source
+
+execute:
+  cache: false
+  freeze: false
+
+project:
+  type: website
+  output-dir: docs
+  render: [index.qmd]
+
+title: "Lorenz System"
+author: "Daniel Vartanian"
+  # name: "Daniel Vartanian"
+  # orcid: 0000-0001-7782-759X
+  # url: https://linktr.ee/danielvartan
+  # email: danvartan@gmail.com
+  # corresponding: true
+  # affiliation:
+  #   - name: University of São Paulo
+  #   - Country: Brazil
+  #   - url: https://www.usp.br
+keyword: >
+  lorenz system, chaos theory, nonlinear dynamics,
+  nonlinear differential equations, atmospheric convection, numerical methods,
+  phase space, system visualization, sensitivity analysis, dynamical systems,
+  r programming, complex systems
+date: today
+date-format: "YYYY-MM-DD"
+
+website:
+  repo-url: https://github.com/danielvartan/lorenz-system/
+  site-url: https://danielvartan.github.io/lorenz-system/
+  issue-url: https://github.com/danielvartan/lorenz-system/issues/
+  repo-branch: main
+  repo-actions: [edit, issue]
+  search: false
+  navbar:
+    title: false
+    background: dark
+    left:
+      - icon: github
+        href: https://github.com/danielvartan/lorenz-system
+        aria-label: GitHub
+
+format:
+  html:
+    locale: en
+    language: en-us
+    code-fold: show
+    code-link: true
+    tbl-cap-location: top
+    callout-appearance: simple
+    csl: csl/english-apa-author-date.csl
+    theme: [cosmo, scss/web.scss]
+
+google-scholar: false
+bibliography: references.bib

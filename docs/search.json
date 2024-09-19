@@ -1,0 +1,44 @@
+[
+  {
+    "objectID": "index.html#overview",
+    "href": "index.html#overview",
+    "title": "Lorenz System",
+    "section": "Overview",
+    "text": "Overview\nThis document focuses on demonstrating the Lorenz system, originally introduced by Edward N. Lorenz in his seminal (1963) paper. The Lorenz system comprises three coupled, nonlinear ordinary differential equations that model atmospheric convection, effectively illustrating the chaotic nature of weather patterns.\nThe dynamics of the model are represented by the following set of first-order, nonlinear differential equations:\n\\[\n\\begin{aligned}\n\\frac{dx}{dt} &= \\sigma(y - x), \\\\\n\\frac{dy}{dt} &= x(\\rho - z) - y \\\\\n\\frac{dz}{dt} &= xy - \\beta z\n\\end{aligned}\n\\] In these equations:\n\n\n\\(x\\) represents the rate of convection;\n\n\\(y\\) denotes the horizontal temperature variation;\n\n\\(z\\) indicates the vertical temperature variation;\n\n\\(\\sigma\\), \\(\\rho\\), and \\(\\beta\\) are system parameters corresponding to the Prandtl number, Rayleigh number, and specific physical dimensions of the fluid layer.\n\nTo learn more about the Lorenz system, see Lorenz (2008)."
+  },
+  {
+    "objectID": "index.html#setting-up-the-environment",
+    "href": "index.html#setting-up-the-environment",
+    "title": "Lorenz System",
+    "section": "Setting up the environment",
+    "text": "Setting up the environment\n\nCodelibrary(checkmate, quietly = TRUE)\nlibrary(deSolve, quietly = TRUE)\nlibrary(dplyr, quietly = TRUE)\nlibrary(ggplot2, quietly = TRUE)\nlibrary(gg3D, quietly = TRUE) # remotes::install_github(\"AckerDWM/gg3D\")\nlibrary(latex2exp, quietly = TRUE)\nlibrary(magrittr, quietly = TRUE)"
+  },
+  {
+    "objectID": "index.html#numerical-solution-of-the-equations",
+    "href": "index.html#numerical-solution-of-the-equations",
+    "title": "Lorenz System",
+    "section": "Numerical solution of the equations",
+    "text": "Numerical solution of the equations\n\nCodelorenz_system &lt;- function(\n    x = 1, \n    y = 1, \n    z = 1, \n    sigma = 10, \n    rho = 28, \n    beta = 8 / 3, \n    from = 0, \n    to = 100,\n    by = 0.01\n  ) {\n  checkmate::assert_number(x)\n  checkmate::assert_number(y)\n  checkmate::assert_number(z)\n  checkmate::assert_number(sigma)\n  checkmate::assert_number(rho)\n  checkmate::assert_number(beta)\n  checkmate::assert_number(from, lower = 0)\n  checkmate::assert_number(to, lower = from)\n  checkmate::assert_number(by, lower = 0)\n  \n  fun &lt;- function (t, y, parms) {\n    list2env(as.list(y), envir = environment())\n    list2env(as.list(parms), envir = environment())\n    \n    list(\n      c(\n        dx = sigma * (y - x),\n        dy = x * (rho - z) - y,\n        dz = (x * y) - (beta * z)\n      )\n    )\n  }\n  \n  initial_values &lt;- c(x = x, y = y, z = z)\n  parameters &lt;- list(sigma = sigma, rho = rho, beta = beta)\n  time &lt;- seq(from = from, to = to, by = by)\n  \n  data &lt;- \n    deSolve::ode(\n      y = initial_values,\n      times = time, \n      func = fun,\n      parms = parameters\n    ) |&gt;\n    dplyr::as_tibble() |&gt;\n    dplyr::mutate(dplyr::across(dplyr::everything(), ~ as.numeric(.x)))\n  \n  list(\n    data = data,\n    initial_values = as.list(initial_values),\n    parameters = as.list(parameters)\n  ) |&gt;\n  invisible()\n}\n\n\n\nCodelorenz_system() |&gt; magrittr::extract2(\"data\")\n#&gt; # A tibble: 10,001 × 4\n#&gt;    time     x     y     z\n#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;\n#&gt; 1  0     1     1    1    \n#&gt; 2  0.01  1.01  1.26 0.985\n#&gt; 3  0.02  1.05  1.52 0.973\n#&gt; 4  0.03  1.11  1.80 0.965\n#&gt; 5  0.04  1.19  2.09 0.962\n#&gt; 6  0.05  1.29  2.40 0.964\n#&gt; # ℹ 9,995 more rows"
+  },
+  {
+    "objectID": "index.html#plotting-system-dynamics",
+    "href": "index.html#plotting-system-dynamics",
+    "title": "Lorenz System",
+    "section": "Plotting system dynamics",
+    "text": "Plotting system dynamics\n\nCodeplot_system_dynamics &lt;- function(\n    x = 1, \n    y = 1, \n    z = 1, \n    sigma = 10, \n    rho = 28, \n    beta = 8 / 3, \n    from = 0, \n    to = 100,\n    by = 0.01\n  ) {\n  checkmate::assert_number(x)\n  checkmate::assert_number(y)\n  checkmate::assert_number(z)\n  checkmate::assert_number(sigma)\n  checkmate::assert_number(rho)\n  checkmate::assert_number(beta)\n  checkmate::assert_number(from, lower = 0)\n  checkmate::assert_number(to, lower = from)\n  checkmate::assert_number(by, lower = 0)\n  \n  lorenz_system(x, y, z, sigma, rho, beta, from, to, by) |&gt; \n    list2env(envir = environment())\n  \n  plot &lt;- \n    data |&gt;\n    ggplot2::ggplot(ggplot2::aes(x = time)) +\n    ggplot2::geom_line(\n      ggplot2::aes(y = y, color = \"Horizontal temperature variation (Y)\"),\n      linewidth = 0.5,\n      alpha = 0.75\n    ) +\n    ggplot2::geom_line(\n      ggplot2::aes(y = z, color = \"Vertical temperature variation (Z)\"),\n      linewidth = 0.5,\n      alpha = 0.75\n    ) +\n    ggplot2::geom_line(\n      ggplot2::aes(y = x, color = \"Rate of convection (X)\"),\n      linewidth = 0.5,\n      alpha = 0.75\n    ) +\n    ggplot2::labs(\n      title = \"Lorenz System Dynamics\",\n      subtitle = latex2exp::TeX(\n        paste0(\n          \"$X_0$ = \", x, \" | \",\n          \"$Y_0$ = \", y, \" | \",\n          \"$Z_0$ = \", z, \" | \",\n          \"$\\\\sigma$ = \", round(sigma, 2), \" | \",\n          \"$\\\\rho$ = \", round(rho, 2), \" | \",\n          \"$\\\\beta$ = \", round(beta, 2)\n        ),\n      ),\n      x = \"Time\", \n      y = \"Values\",\n      color = ggplot2::element_blank()\n    ) +\n    ggplot2::scale_color_manual(\n      breaks = c(\n        \"Rate of convection (X)\", \n        \"Horizontal temperature variation (Y)\", \n        \"Vertical temperature variation (Z)\"\n      ),\n      values = c(\"blue\", \"red\", \"black\")\n    )\n  \n  print(plot)\n  \n  invisible()\n}\n\n\n\nCodeplot_system_dynamics()"
+  },
+  {
+    "objectID": "index.html#phase-space-visualization",
+    "href": "index.html#phase-space-visualization",
+    "title": "Lorenz System",
+    "section": "Phase space visualization",
+    "text": "Phase space visualization\n\nCodeplot_phase_space &lt;- function(\n    x = 1, \n    y = 1, \n    z = 1, \n    sigma = 10, \n    rho = 28, \n    beta = 8 / 3, \n    from = 0, \n    to = 100,\n    by = 0.001,\n    theta = 180,\n    phi = 0\n  ) {\n  checkmate::assert_number(x)\n  checkmate::assert_number(y)\n  checkmate::assert_number(z)\n  checkmate::assert_number(sigma)\n  checkmate::assert_number(rho)\n  checkmate::assert_number(beta)\n  checkmate::assert_number(from, lower = 0)\n  checkmate::assert_number(to, lower = from)\n  checkmate::assert_number(by, lower = 0)\n  \n  lorenz_system(x, y, z, sigma, rho, beta, from, to, by) |&gt; \n    list2env(envir = environment())\n\n  plot &lt;-\n    data |&gt;\n    ggplot2::ggplot(ggplot2::aes(x = x, y = y, z = z, colour = time)) +\n    gg3D::stat_3D(theta = theta, phi = phi, geom = \"path\") +\n    theme_void() +\n    theme(legend.position = \"none\")\n  \n  print(plot)\n  \n  invisible()\n}\n\n\n\nCodeplot_phase_space()"
+  },
+  {
+    "objectID": "index.html#references",
+    "href": "index.html#references",
+    "title": "Lorenz System",
+    "section": "References",
+    "text": "References\n\n\nLorenz, E. N. (1963). Deterministic nonperiodic flow. Journal of the Atmospheric Sciences, 20(2), 130–141. https://doi.org/10.1175/1520-0469(1963)020&lt;0130:DNF&gt;2.0.CO;2\n\n\nLorenz, E. N. (2008). The essence of chaos. UCL Press."
+  }
+]

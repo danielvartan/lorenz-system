@@ -1,0 +1,249 @@
+```{r}
+#| label: setup
+#| include: false
+
+source(here::here("R/quarto-setup.R"))
+```
+
+<!-- badges: start -->
+[![Project Status: Inactive – The project has reached a stable, usable state but is no longer being actively developed; support/maintenance will be provided as time allows.](https://www.repostatus.org/badges/latest/inactive.svg)](https://www.repostatus.org/#inactive)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://choosealicense.com/licenses/mit/)
+<!-- badges: end -->
+
+## Overview
+
+This document focuses on demonstrating the [Lorenz system](https://en.wikipedia.org/wiki/Lorenz_system), originally introduced by Edward N. Lorenz in his seminal [-@lorenz1963] paper. The Lorenz system comprises three coupled, nonlinear ordinary differential equations that model atmospheric convection, effectively illustrating the chaotic nature of weather patterns.
+
+The dynamics of the model are represented by the following set of first-order, nonlinear differential equations:
+
+$$
+\begin{aligned}
+\frac{dx}{dt} &= \sigma(y - x), \\
+\frac{dy}{dt} &= x(\rho - z) - y \\
+\frac{dz}{dt} &= xy - \beta z
+\end{aligned}
+$$
+In these equations:
+
+- $x$ represents the rate of convection;
+- $y$ denotes the horizontal temperature variation;
+- $z$ indicates the vertical temperature variation;
+- $\sigma$, $\rho$, and $\beta$ are system parameters corresponding to the [Prandtl number](https://en.wikipedia.org/wiki/Prandtl_number), [Rayleigh number](https://en.wikipedia.org/wiki/Rayleigh_number), and specific physical dimensions of the fluid layer.
+
+To learn more about the Lorenz system, see @lorenz2008.
+
+## Setting up the environment
+
+```{r}
+#| eval: false
+#| output: false
+
+library(checkmate, quietly = TRUE)
+library(deSolve, quietly = TRUE)
+library(dplyr, quietly = TRUE)
+library(ggplot2, quietly = TRUE)
+library(gg3D, quietly = TRUE) # remotes::install_github("AckerDWM/gg3D")
+library(latex2exp, quietly = TRUE)
+library(magrittr, quietly = TRUE)
+```
+
+```{r}
+#| echo: false
+
+library(gg3D, quietly = TRUE)
+```
+
+## Numerical solution of the equations
+
+```{r}
+lorenz_system <- function(
+    x = 1, 
+    y = 1, 
+    z = 1, 
+    sigma = 10, 
+    rho = 28, 
+    beta = 8 / 3, 
+    from = 0, 
+    to = 100,
+    by = 0.01
+  ) {
+  checkmate::assert_number(x)
+  checkmate::assert_number(y)
+  checkmate::assert_number(z)
+  checkmate::assert_number(sigma)
+  checkmate::assert_number(rho)
+  checkmate::assert_number(beta)
+  checkmate::assert_number(from, lower = 0)
+  checkmate::assert_number(to, lower = from)
+  checkmate::assert_number(by, lower = 0)
+  
+  fun <- function (t, y, parms) {
+    list2env(as.list(y), envir = environment())
+    list2env(as.list(parms), envir = environment())
+    
+    list(
+      c(
+        dx = sigma * (y - x),
+        dy = x * (rho - z) - y,
+        dz = (x * y) - (beta * z)
+      )
+    )
+  }
+  
+  initial_values <- c(x = x, y = y, z = z)
+  parameters <- list(sigma = sigma, rho = rho, beta = beta)
+  time <- seq(from = from, to = to, by = by)
+  
+  data <- 
+    deSolve::ode(
+      y = initial_values,
+      times = time, 
+      func = fun,
+      parms = parameters
+    ) |>
+    dplyr::as_tibble() |>
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~ as.numeric(.x)))
+  
+  list(
+    data = data,
+    initial_values = as.list(initial_values),
+    parameters = as.list(parameters)
+  ) |>
+  invisible()
+}
+```
+
+```{r}
+lorenz_system() |> magrittr::extract2("data")
+```
+
+## Plotting system dynamics
+
+```{r}
+plot_system_dynamics <- function(
+    x = 1, 
+    y = 1, 
+    z = 1, 
+    sigma = 10, 
+    rho = 28, 
+    beta = 8 / 3, 
+    from = 0, 
+    to = 100,
+    by = 0.01
+  ) {
+  checkmate::assert_number(x)
+  checkmate::assert_number(y)
+  checkmate::assert_number(z)
+  checkmate::assert_number(sigma)
+  checkmate::assert_number(rho)
+  checkmate::assert_number(beta)
+  checkmate::assert_number(from, lower = 0)
+  checkmate::assert_number(to, lower = from)
+  checkmate::assert_number(by, lower = 0)
+  
+  lorenz_system(x, y, z, sigma, rho, beta, from, to, by) |> 
+    list2env(envir = environment())
+  
+  plot <- 
+    data |>
+    ggplot2::ggplot(ggplot2::aes(x = time)) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = y, color = "Horizontal temperature variation (Y)"),
+      linewidth = 0.5,
+      alpha = 0.75
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = z, color = "Vertical temperature variation (Z)"),
+      linewidth = 0.5,
+      alpha = 0.75
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(y = x, color = "Rate of convection (X)"),
+      linewidth = 0.5,
+      alpha = 0.75
+    ) +
+    ggplot2::labs(
+      title = "Lorenz System Dynamics",
+      subtitle = latex2exp::TeX(
+        paste0(
+          "$X_0$ = ", x, " | ",
+          "$Y_0$ = ", y, " | ",
+          "$Z_0$ = ", z, " | ",
+          "$\\sigma$ = ", round(sigma, 2), " | ",
+          "$\\rho$ = ", round(rho, 2), " | ",
+          "$\\beta$ = ", round(beta, 2)
+        ),
+      ),
+      x = "Time", 
+      y = "Values",
+      color = ggplot2::element_blank()
+    ) +
+    ggplot2::scale_color_manual(
+      breaks = c(
+        "Rate of convection (X)", 
+        "Horizontal temperature variation (Y)", 
+        "Vertical temperature variation (Z)"
+      ),
+      values = c("blue", "red", "black")
+    )
+  
+  print(plot)
+  
+  invisible()
+}
+```
+
+```{r}
+plot_system_dynamics()
+```
+
+## Phase space visualization
+
+```{r}
+plot_phase_space <- function(
+    x = 1, 
+    y = 1, 
+    z = 1, 
+    sigma = 10, 
+    rho = 28, 
+    beta = 8 / 3, 
+    from = 0, 
+    to = 100,
+    by = 0.001,
+    theta = 180,
+    phi = 0
+  ) {
+  checkmate::assert_number(x)
+  checkmate::assert_number(y)
+  checkmate::assert_number(z)
+  checkmate::assert_number(sigma)
+  checkmate::assert_number(rho)
+  checkmate::assert_number(beta)
+  checkmate::assert_number(from, lower = 0)
+  checkmate::assert_number(to, lower = from)
+  checkmate::assert_number(by, lower = 0)
+  
+  lorenz_system(x, y, z, sigma, rho, beta, from, to, by) |> 
+    list2env(envir = environment())
+
+  plot <-
+    data |>
+    ggplot2::ggplot(ggplot2::aes(x = x, y = y, z = z, colour = time)) +
+    gg3D::stat_3D(theta = theta, phi = phi, geom = "path") +
+    theme_void() +
+    theme(legend.position = "none")
+  
+  print(plot)
+  
+  invisible()
+}
+```
+
+```{r}
+plot_phase_space()
+```
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
