@@ -12,7 +12,7 @@ source(here::here("R/quarto-setup.R"))
 
 ## Overview
 
-This document focuses on demonstrating the [Lorenz system](https://en.wikipedia.org/wiki/Lorenz_system), originally introduced by Edward N. Lorenz in his seminal [-@lorenz1963] paper. The Lorenz system comprises three coupled, nonlinear ordinary differential equations that model atmospheric convection, effectively illustrating the chaotic nature of weather patterns.
+This document focuses on illustrating the [Lorenz system](https://en.wikipedia.org/wiki/Lorenz_system), originally introduced by Edward N. Lorenz in his seminal [-@lorenz1963] paper. The Lorenz system comprises three coupled, nonlinear ordinary differential equations that model atmospheric convection, effectively illustrating the chaotic nature of weather patterns.
 
 The dynamics of the model are represented by the following set of first-order, nonlinear differential equations:
 
